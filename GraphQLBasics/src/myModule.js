@@ -17,3 +17,6 @@ Default Export -
      a// has no name
      b// you can use only one
 */
+/*
+for babel only
+*/
