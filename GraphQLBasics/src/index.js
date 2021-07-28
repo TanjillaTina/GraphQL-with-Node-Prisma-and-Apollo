@@ -3,6 +3,8 @@ import { GraphQLServer } from 'graphql-yoga';
 also known as GraphQL Schemas 
 */
 const typeDefs = ` type Query {
+    sum(a:Float!, b: Float!):Float!
+    greeting(name: String, position: String):String!
     me: User!
     post: Post!
 }
@@ -21,6 +23,18 @@ const typeDefs = ` type Query {
 //Resolvers
 const resolvers = {
   Query: {
+    sum(parent, args, ctx, info) {
+      return args.a + args.b;
+    },
+    greeting(parent, args, ctx, info) {
+      if (args.name && !args.position) {
+        return `Hello ${args.name}`;
+      } else if (args.name && args.position) {
+        return `Hello ${args.name} you are ${args.position}`;
+      } else {
+        return 'Hello No Name and No position';
+      }
+    },
     me() {
       return {
         id: '14235427',
