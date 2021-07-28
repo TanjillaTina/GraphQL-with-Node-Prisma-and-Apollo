@@ -3,14 +3,21 @@ import { GraphQLServer } from 'graphql-yoga';
 also known as GraphQL Schemas 
 */
 const typeDefs = ` type Query {
-    me: User  
+    me: User!
+    post: Post!
 }
-    type User{
+    type User {
         id:ID!
         name:String!
         email:String!
-        age:Int
-}`;
+        age:Int}
+        
+    type Post {
+      id:ID!
+      title:String!
+      body:String!
+      published:Boolean!
+    }`;
 //Resolvers
 const resolvers = {
   Query: {
@@ -20,6 +27,14 @@ const resolvers = {
         name: 'Tina',
         email: 'tina@gmail.com',
         age: 23,
+      };
+    },
+    post() {
+      return {
+        id: 2132,
+        title: 'The Title Goes Here',
+        body: 'The Post Body Goes Here',
+        published: true,
       };
     },
   },
