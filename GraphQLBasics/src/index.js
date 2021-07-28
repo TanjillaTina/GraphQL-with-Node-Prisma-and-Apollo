@@ -1,43 +1,36 @@
-import { GraphQLServer } from 'graphql-yoga'
+import { GraphQLServer } from 'graphql-yoga';
 /*Type Definitions
 also known as GraphQL Schemas 
 */
-const typeDefs=` type Query {
-    title : String!
-    price: Float!
-    releaseYear: Int!
-    rating:Float!
-    inStock: Boolean!    
+const typeDefs = ` type Query {
+    me: User  
+}
+    type User{
+        id:ID!
+        name:String!
+        email:String!
+        age:Int
 }`;
 //Resolvers
-const resolvers ={
-Query :{
-    title(){
-        return `This is my first query`
+const resolvers = {
+  Query: {
+    me() {
+      return {
+        id: '14235427',
+        name: 'Tina',
+        email: 'tina@gmail.com',
+        age: 23,
+      };
     },
-    price(){
-        return 5.00
-    },
-    releaseYear(){
-        return 2018
-    },
-    
-    rating(){
-       return 3.2 
-    },
-    inStock(){
-        return true
-    }
-    
-}
+  },
 };
-const server=new GraphQLServer({
-    typeDefs,
-    resolvers
+const server = new GraphQLServer({
+  typeDefs,
+  resolvers,
 });
 
-server.start(()=>{
-    console.log('Server is running')
+server.start(() => {
+  console.log('Server is running');
 });
 
 //Server running at port 4000 by default
