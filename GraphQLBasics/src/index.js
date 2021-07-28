@@ -3,8 +3,10 @@ import { GraphQLServer } from 'graphql-yoga';
 also known as GraphQL Schemas 
 */
 const typeDefs = ` type Query {
+    addArray(numbers: [Float!]!): Float
     sum(a:Float!, b: Float!):Float!
     greeting(name: String, position: String):String!
+    grades:[Int!]!
     me: User!
     post: Post!
 }
@@ -23,6 +25,25 @@ const typeDefs = ` type Query {
 //Resolvers
 const resolvers = {
   Query: {
+    addArray(parent, args, ctx, info) {
+      if (args.numbers.length === 0) {
+        return 0;
+      } else {
+        return args.numbers.reduce((accumulator, currentValue) => {
+          return accumulator + currentValue;
+        });
+      }
+      /* let sum = 0;
+      if (args.numbers.length === 0) {
+        return 0;
+      } else {
+        for (let i = 0; i < args.numbers.length; i++) {
+          sum = sum + args.numbers[i];
+        }
+      }
+      return sum;
+      */
+    },
     sum(parent, args, ctx, info) {
       return args.a + args.b;
     },
@@ -34,6 +55,9 @@ const resolvers = {
       } else {
         return 'Hello No Name and No position';
       }
+    },
+    grades(parent, args, ctx, info) {
+      return [70, 79, 80, 90];
     },
     me() {
       return {
