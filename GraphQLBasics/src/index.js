@@ -1,5 +1,5 @@
 import { GraphQLServer } from 'graphql-yoga';
-
+import { v4 as uuidv4 } from 'uuid';
 const usrs = [
   { id: '1', name: 'A', email: 'A@gmail.com', age: 23 },
   { id: '2', name: 'B', email: 'B@gmail.com', age: 30 },
@@ -17,14 +17,17 @@ const cmntz = [
   { id: '104', text: 'Horrible', author: '3', post: '3' },
 ];
 const typeDefs = ` type Query {
-
     me: User!
     post: Post!
     allUsers:[User!]!
     filterUsrsByName(query:String):[User!]!
     allPosts(query:String):[Post!]!
     comments:[Comment!]!
-}
+    }
+    type Mutation {
+      createUser(name:String!, email:String!, age:Int):User!
+      createPost(title:String!, body:String!,published:Boolean!,author:String!):Post!
+    }
     type User {
         id:ID!
         name:String!
@@ -93,6 +96,39 @@ const resolvers = {
       };
     },
   },
+  Mutation: {
+    createUser(parent, args, ctx, info) {
+      const emailTaken = usrs.some((usr) => usr.email === args.email);
+      if (emailTaken) {
+        throw Error('Email Taken');
+      }
+      const newUser = {
+        id: uuidv4(),
+        name: args.name,
+        email: args.email,
+        age: args.age,
+      };
+      usrs.push(newUser);
+      return newUser;
+      // console.log(args);
+    },
+    createPost(parent, args, ctx, info) {
+      const userExists = usrs.some((usr) => usr.id === args.author);
+      if (!userExists) {
+        throw Error('User Not Found');
+      }
+      const newPost = {
+        id: uuidv4(),
+        title: args.title,
+        body: args.body,
+        published: args.published,
+        author: args.author,
+      };
+
+      postz.push(newPost);
+      return newPost;
+    },
+  },
   Post: {
     author(parent, args, ctx, info) {
       return usrs.find((usr) => {
@@ -138,8 +174,31 @@ server.start(() => {
 
 /*
 Mutation Queries::
-////////////////////////////////
 
+mutation {
+  createUser(name:"Tina", email:"dssxi@mk.d"){
+    id,
+      name,
+      email,
+      age
+  }
+}
+////////////////////////////////
+mutation {
+  createPost(title:"tina",body:"body",author:"1",published:true){
+    id,
+    title,
+    body,
+    author{
+      name,
+      email
+    },
+    comments{
+      id
+    }
+    published
+  }
+}
 /////////////////////////////////
 
 ////////////////////////////////
