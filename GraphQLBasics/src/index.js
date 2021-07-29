@@ -2,6 +2,16 @@ import { GraphQLServer } from 'graphql-yoga';
 /*Type Definitions
 also known as GraphQL Schemas 
 */
+const usrs = [
+  { id: '1', name: 'A', email: 'A@gmail.com', age: 23 },
+  { id: '2', name: 'B', email: 'B@gmail.com', age: 30 },
+  { id: '3', name: 'C', email: 'C@gmail.com' },
+];
+const postz = [
+  { id: '1', title: 'AA', body: 'ABody', published: true },
+  { id: '2', title: 'BB', body: 'BBbody', published: true },
+  { id: '3', title: 'CC', body: 'CCbody', published: false },
+];
 const typeDefs = ` type Query {
     addArray(numbers: [Float!]!): Float
     sum(a:Float!, b: Float!):Float!
@@ -9,6 +19,9 @@ const typeDefs = ` type Query {
     grades:[Int!]!
     me: User!
     post: Post!
+    allUsers:[User!]!
+    filterUsrsByName(query:String):[User!]!
+    allPosts(query:String):[Post!]!
 }
     type User {
         id:ID!
@@ -25,6 +38,28 @@ const typeDefs = ` type Query {
 //Resolvers
 const resolvers = {
   Query: {
+    allPosts(parent, args, ctx, info) {
+      if (!args.query) {
+        return postz;
+      }
+      return postz.filter((post) => {
+        return (
+          post.title.toLowerCase().includes(args.query.toLowerCase()) ||
+          post.body.toLowerCase().includes(args.query.toLowerCase())
+        );
+      });
+    },
+    filterUsrsByName(parent, args, ctx, info) {
+      if (!args.query) {
+        return usrs;
+      }
+      return usrs.filter((user) => {
+        return user.name.toLowerCase().includes(args.query.toLowerCase());
+      });
+    },
+    allUsers(parent, args, ctx, info) {
+      return usrs;
+    },
     addArray(parent, args, ctx, info) {
       if (args.numbers.length === 0) {
         return 0;
@@ -33,16 +68,6 @@ const resolvers = {
           return accumulator + currentValue;
         });
       }
-      /* let sum = 0;
-      if (args.numbers.length === 0) {
-        return 0;
-      } else {
-        for (let i = 0; i < args.numbers.length; i++) {
-          sum = sum + args.numbers[i];
-        }
-      }
-      return sum;
-      */
     },
     sum(parent, args, ctx, info) {
       return args.a + args.b;
@@ -87,3 +112,36 @@ server.start(() => {
 });
 
 //Server running at port 4000 by default
+
+/*
+    List of Queries:
+query{
+  allPosts(query:"CC"){
+id, title,body,published
+  },
+  allUsers{
+    id,
+    name,
+    email,
+    age
+  },
+  me{
+    id
+  },
+  filterUsrsByName(query:"A"){
+    name
+  },
+  post{
+    id
+  },
+  me{
+    email,
+    id
+  },
+  grades,
+  greeting(name:"Tina",position:"Soft Eng"),
+  sum(a:12.4, b:3.4),
+  addArray(numbers:[1,2.3,5])
+  
+}
+      */
