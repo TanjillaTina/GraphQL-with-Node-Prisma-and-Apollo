@@ -1,7 +1,5 @@
 import { GraphQLServer } from 'graphql-yoga';
-/*Type Definitions
-also known as GraphQL Schemas 
-*/
+
 const usrs = [
   { id: '1', name: 'A', email: 'A@gmail.com', age: 23 },
   { id: '2', name: 'B', email: 'B@gmail.com', age: 30 },
@@ -19,10 +17,7 @@ const cmntz = [
   { id: '104', text: 'Horrible', author: '3', post: '3' },
 ];
 const typeDefs = ` type Query {
-    addArray(numbers: [Float!]!): Float
-    sum(a:Float!, b: Float!):Float!
-    greeting(name: String, position: String):String!
-    grades:[Int!]!
+
     me: User!
     post: Post!
     allUsers:[User!]!
@@ -79,30 +74,6 @@ const resolvers = {
     },
     allUsers(parent, args, ctx, info) {
       return usrs;
-    },
-    addArray(parent, args, ctx, info) {
-      if (args.numbers.length === 0) {
-        return 0;
-      } else {
-        return args.numbers.reduce((accumulator, currentValue) => {
-          return accumulator + currentValue;
-        });
-      }
-    },
-    sum(parent, args, ctx, info) {
-      return args.a + args.b;
-    },
-    greeting(parent, args, ctx, info) {
-      if (args.name && !args.position) {
-        return `Hello ${args.name}`;
-      } else if (args.name && args.position) {
-        return `Hello ${args.name} you are ${args.position}`;
-      } else {
-        return 'Hello No Name and No position';
-      }
-    },
-    grades(parent, args, ctx, info) {
-      return [70, 79, 80, 90];
     },
     me() {
       return {
@@ -166,77 +137,15 @@ server.start(() => {
 //Server running at port 4000 by default
 
 /*
-List of Queries:
-query{
-  allPosts(query:"CC"){
-id, title,body,published
-  },
-  allUsers{
-    id,
-    name,
-    email,
-    age
-  },
-  me{
-    id
-  },
-  filterUsrsByName(query:"A"){
-    name
-  },
-  post{
-    id
-  },
-  me{
-    email,
-    id
-  },
-  grades,
-  greeting(name:"Tina",position:"Soft Eng"),
-  sum(a:12.4, b:3.4),
-  addArray(numbers:[1,2.3,5])
-  
-}
-      */
+Mutation Queries::
+////////////////////////////////
 
-/*
-Relational Queries::
-////////////////////////////////
-query{
-  allPosts{
-id, title,body,published,
-    author{name}
-  }}
 /////////////////////////////////
-query{
-  filterUsrsByName{
-    id, name, email, age,
-    posts{id, body} 
-}}
+
 ////////////////////////////////
-query{
-  comments{
-    id,text,
-    author {name}
-  }
-}
+
 ////////////////////////////////
-query{
-  comments{
-    id,text,
-    author {name}
-    post{
-      id
-      title
-      body
-    }
-    
-  }
-}
+
 //////////////////////////////////
-query{
-  allPosts{
-id, title,body,published,
-    author{name}
-    comments{id, author{name}}
-  }}
+
 */
