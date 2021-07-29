@@ -8,9 +8,15 @@ const usrs = [
   { id: '3', name: 'C', email: 'C@gmail.com' },
 ];
 const postz = [
-  { id: '1', title: 'AA', body: 'ABody', published: true },
-  { id: '2', title: 'BB', body: 'BBbody', published: true },
-  { id: '3', title: 'CC', body: 'CCbody', published: false },
+  { id: '1', title: 'AA', body: 'ABody', published: true, author: '1' },
+  { id: '2', title: 'BB', body: 'BBbody', published: true, author: '2' },
+  { id: '3', title: 'CC', body: 'CCbody', published: false, author: '2' },
+];
+const cmntz = [
+  { id: '101', text: 'Good', author: '1', post: '1' },
+  { id: '102', text: 'Great', author: '1', post: '2' },
+  { id: '103', text: 'Pathetic', author: '2', post: '2' },
+  { id: '104', text: 'Horrible', author: '3', post: '3' },
 ];
 const typeDefs = ` type Query {
     addArray(numbers: [Float!]!): Float
@@ -22,22 +28,36 @@ const typeDefs = ` type Query {
     allUsers:[User!]!
     filterUsrsByName(query:String):[User!]!
     allPosts(query:String):[Post!]!
+    comments:[Comment!]!
 }
     type User {
         id:ID!
         name:String!
         email:String!
-        age:Int}
-        
+        age:Int
+        posts:[Post!]!
+        comments:[Comment!]!
+      } 
     type Post {
       id:ID!
       title:String!
       body:String!
       published:Boolean!
+      author:User!
+      comments:[Comment!]!
+    }
+    type Comment {
+      id:ID!
+      text:String!
+      author:User!
+      post:Post!
     }`;
 //Resolvers
 const resolvers = {
   Query: {
+    comments(parent, args, ctx, info) {
+      return cmntz;
+    },
     allPosts(parent, args, ctx, info) {
       if (!args.query) {
         return postz;
@@ -98,7 +118,39 @@ const resolvers = {
         title: 'The Title Goes Here',
         body: 'The Post Body Goes Here',
         published: true,
+        author: 'Tina',
       };
+    },
+  },
+  Post: {
+    author(parent, args, ctx, info) {
+      return usrs.find((usr) => {
+        return usr.id === parent.author;
+      });
+    },
+    comments(parent, args, ctx, info) {
+      return cmntz.filter((cmt) => {
+        return cmt.post === parent.id;
+      });
+    },
+  },
+  User: {
+    posts(parent, args, ctx, info) {
+      return postz.filter((pst) => {
+        return pst.author === parent.id;
+      });
+    },
+  },
+  Comment: {
+    author(parent, args, ctx, info) {
+      return usrs.find((usr) => {
+        return usr.id === parent.author;
+      });
+    },
+    post(parent, args, ctx, info) {
+      return postz.find((pst) => {
+        return pst.id === parent.post;
+      });
     },
   },
 };
@@ -114,7 +166,7 @@ server.start(() => {
 //Server running at port 4000 by default
 
 /*
-    List of Queries:
+List of Queries:
 query{
   allPosts(query:"CC"){
 id, title,body,published
@@ -145,3 +197,46 @@ id, title,body,published
   
 }
       */
+
+/*
+Relational Queries::
+////////////////////////////////
+query{
+  allPosts{
+id, title,body,published,
+    author{name}
+  }}
+/////////////////////////////////
+query{
+  filterUsrsByName{
+    id, name, email, age,
+    posts{id, body} 
+}}
+////////////////////////////////
+query{
+  comments{
+    id,text,
+    author {name}
+  }
+}
+////////////////////////////////
+query{
+  comments{
+    id,text,
+    author {name}
+    post{
+      id
+      title
+      body
+    }
+    
+  }
+}
+//////////////////////////////////
+query{
+  allPosts{
+id, title,body,published,
+    author{name}
+    comments{id, author{name}}
+  }}
+*/
