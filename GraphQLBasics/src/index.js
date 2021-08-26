@@ -16,6 +16,8 @@ const cmntz = [
   { id: '103', text: 'Pathetic', author: '2', post: '2' },
   { id: '104', text: 'Horrible', author: '3', post: '3' },
 ];
+
+//Type Defs:: Application Schema
 const typeDefs = ` type Query {
     me: User!
     post: Post!
@@ -27,6 +29,7 @@ const typeDefs = ` type Query {
     type Mutation {
       createUser(name:String!, email:String!, age:Int):User!
       createPost(title:String!, body:String!,published:Boolean!,author:String!):Post!
+      createComment(text:String!,author:ID!,post:ID!):Comment!
     }
     type User {
         id:ID!
@@ -52,6 +55,7 @@ const typeDefs = ` type Query {
     }`;
 //Resolvers
 const resolvers = {
+  ///Query is To Fetch User Data
   Query: {
     comments(parent, args, ctx, info) {
       return cmntz;
@@ -96,7 +100,24 @@ const resolvers = {
       };
     },
   },
+  ///Mutation is for CRUD operation
   Mutation: {
+    createComment(parent, args, ctx, info) {
+      const authorExists = usrs.some((usr) => usr.id === args.author);
+      const postExists = postz.some((pst) => pst.id === args.post);
+      if (authorExists && postExists) {
+        const newComment = {
+          id: uuidv4(),
+          text: args.text,
+          author: args.author,
+          post: args.post,
+        };
+        cmntz.push(newComment);
+        return newComment;
+      } else {
+        throw Error('Unable To Find User and Post');
+      }
+    },
     createUser(parent, args, ctx, info) {
       const emailTaken = usrs.some((usr) => usr.email === args.email);
       if (emailTaken) {
@@ -200,7 +221,20 @@ mutation {
   }
 }
 /////////////////////////////////
-
+mutation {
+  createComment(
+    text:"tina",author:"2",post:"1"){
+    id,
+    text,
+    author{
+      name,
+      email
+    },
+    post{
+      id
+    }
+  }
+}
 ////////////////////////////////
 
 ////////////////////////////////
