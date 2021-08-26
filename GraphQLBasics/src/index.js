@@ -30,6 +30,7 @@ const typeDefs = ` type Query {
       createUser(name:String!, email:String!, age:Int):User!
       createPost(title:String!, body:String!,published:Boolean!,author:String!):Post!
       createComment(text:String!,author:ID!,post:ID!):Comment!
+      createUserWithSpreadOp(name:String!, email:String!, age:Int):User!
     }
     type User {
         id:ID!
@@ -102,6 +103,19 @@ const resolvers = {
   },
   ///Mutation is for CRUD operation
   Mutation: {
+    createUserWithSpreadOp(parent, args, ctx, info) {
+      const emailTaken = usrs.some((usr) => usr.email === args.email);
+      if (emailTaken) {
+        throw Error('Email Taken');
+      }
+      const newUser = {
+        id: uuidv4(),
+        ...args,
+      };
+      usrs.push(newUser);
+      return newUser;
+      // console.log(args);
+    },
     createComment(parent, args, ctx, info) {
       const authorExists = usrs.some((usr) => usr.id === args.author);
       const postExists = postz.some((pst) => pst.id === args.post);
