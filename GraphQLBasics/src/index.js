@@ -31,6 +31,26 @@ const typeDefs = ` type Query {
       createPost(title:String!, body:String!,published:Boolean!,author:String!):Post!
       createComment(text:String!,author:ID!,post:ID!):Comment!
       createUserWithSpreadOp(name:String!, email:String!, age:Int):User!
+      createUserWithInputType(userInput:CreateUserInput!):User!
+      createPostWithInputType(postInput:CreatePostInput!):Post!
+      createCommentWithInputType(cmtInput:CreateComentInput):Comment!
+      
+    }
+    input CreateComentInput{
+      text:String!
+      author:ID!
+      post:ID!
+    }
+    input CreateUserInput{
+      name:String!
+      email:String!
+      age:Int
+    }
+    input CreatePostInput{
+      title:String!
+      body:String!
+      published:Boolean!
+      author:ID!
     }
     type User {
         id:ID!
@@ -103,6 +123,18 @@ const resolvers = {
   },
   ///Mutation is for CRUD operation
   Mutation: {
+    createUserWithInputType(parent, args, ctx, info) {
+      const emailTaken = usrs.some((usr) => usr.email === args.userInput.email);
+      if (emailTaken) {
+        throw Error('Email Taken');
+      }
+      const newUser = {
+        id: uuidv4(),
+        ...args.userInput,
+      };
+      usrs.push(newUser);
+      return newUser;
+    },
     createUserWithSpreadOp(parent, args, ctx, info) {
       const emailTaken = usrs.some((usr) => usr.email === args.email);
       if (emailTaken) {
@@ -163,7 +195,36 @@ const resolvers = {
       postz.push(newPost);
       return newPost;
     },
+    createPostWithInputType(parent, args, ctx, info) {
+      //postInput
+      const userExists = usrs.some((usr) => usr.id === args.postInput.author);
+      if (!userExists) {
+        throw Error('User Not Found');
+      }
+      const newPost = {
+        id: uuidv4(),
+        ...args.postInput,
+      };
+
+      postz.push(newPost);
+      return newPost;
+    },
+    createCommentWithInputType(parent, args, ctx, info) {
+      const authorExists = usrs.some((usr) => usr.id === args.cmtInput.author);
+      const postExists = postz.some((pst) => pst.id === args.cmtInput.post);
+      if (authorExists && postExists) {
+        const newComment = {
+          id: uuidv4(),
+          ...args.cmtInput,
+        };
+        cmntz.push(newComment);
+        return newComment;
+      } else {
+        throw Error('Unable To Find User and Post');
+      }
+    },
   },
+
   Post: {
     author(parent, args, ctx, info) {
       return usrs.find((usr) => {
@@ -250,9 +311,38 @@ mutation {
   }
 }
 ////////////////////////////////
+mutation {
+  createUserWithInputType(userInput:{name:"Tina", email:"tt@m.s"}){
+    id,
+      name,
+      email,
+      age
+  }
+}
 
 ////////////////////////////////
+mutation {
+  createPostWithInputType(postInput:{title:"tina",body:"body",author:"1",
+    published:true}){
+    id,
+    title,
+    body,
+    author{
+      name,
+      email
+    },
+    comments{
+      id
+    }
+    published
+  }
+}
+//////////////////////////////////
 
+//////////////////////////////////
+//////////////////////////////////
+//////////////////////////////////
+//////////////////////////////////
 //////////////////////////////////
 
 */
