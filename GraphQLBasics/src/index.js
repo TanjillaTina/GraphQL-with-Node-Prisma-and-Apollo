@@ -1,19 +1,19 @@
 import { GraphQLServer } from 'graphql-yoga';
 import { v4 as uuidv4 } from 'uuid';
-import {usrs, postz, cmntz} from './db';
+import db from './db';
 
 //Resolvers
 const resolvers = {
   ///Query is To Fetch User Data
   Query: {
     comments(parent, args, ctx, info) {
-      return cmntz;
+      return ctx.db.cmntz;
     },
     allPosts(parent, args, ctx, info) {
       if (!args.query) {
-        return postz;
+        return ctx.db.postz;
       }
-      return postz.filter((post) => {
+      return ctx.db.postz.filter((post) => {
         return (
           post.title.toLowerCase().includes(args.query.toLowerCase()) ||
           post.body.toLowerCase().includes(args.query.toLowerCase())
@@ -22,14 +22,14 @@ const resolvers = {
     },
     filterUsrsByName(parent, args, ctx, info) {
       if (!args.query) {
-        return usrs;
+        return ctx.db.usrs;
       }
-      return usrs.filter((user) => {
+      return ctx.db.usrs.filter((user) => {
         return user.name.toLowerCase().includes(args.query.toLowerCase());
       });
     },
     allUsers(parent, args, ctx, info) {
-      return usrs;
+      return ctx.db.usrs;
     },
     me() {
       return {
@@ -53,7 +53,7 @@ const resolvers = {
   Mutation: {
     ///////User Starts Here
     createUserWithInputType(parent, args, ctx, info) {
-      const emailTaken = usrs.some((usr) => usr.email === args.userInput.email);
+      const emailTaken = ctx.db.usrs.some((usr) => usr.email === args.userInput.email);
       if (emailTaken) {
         throw Error('Email Taken');
       }
@@ -61,11 +61,11 @@ const resolvers = {
         id: uuidv4(),
         ...args.userInput,
       };
-      usrs.push(newUser);
+      ctx.db.usrs.push(newUser);
       return newUser;
     },
     createUserWithSpreadOp(parent, args, ctx, info) {
-      const emailTaken = usrs.some((usr) => usr.email === args.email);
+      const emailTaken = ctx.db.usrs.some((usr) => usr.email === args.email);
       if (emailTaken) {
         throw Error('Email Taken');
       }
@@ -73,12 +73,12 @@ const resolvers = {
         id: uuidv4(),
         ...args,
       };
-      usrs.push(newUser);
+      ctx.db.usrs.push(newUser);
       return newUser;
       // console.log(args);
     },
     createUser(parent, args, ctx, info) {
-      const emailTaken = usrs.some((usr) => usr.email === args.email);
+      const emailTaken = ctx.db.usrs.some((usr) => usr.email === args.email);
       if (emailTaken) {
         throw Error('Email Taken');
       }
@@ -88,29 +88,29 @@ const resolvers = {
         email: args.email,
         age: args.age,
       };
-      usrs.push(newUser);
+      ctx.db.usrs.push(newUser);
       return newUser;
       // console.log(args);
     },
     deleteUser(parent, args, ctx, info) {
-      const userIndex = usrs.findIndex((user) => user.id === args.id);
+      const userIndex = ctx.db.usrs.findIndex((user) => user.id === args.id);
       if (userIndex === -1) {
           throw new Error('User not found');
       }
-      const deletedUser = usrs.splice(userIndex, 1);
-      const postzIndex=postz.findIndex(pt=>pt.author===args.id);
+      const deletedUser = ctx.db.usrs.splice(userIndex, 1);
+      const postzIndex=ctx.db.postz.findIndex(pt=>pt.author===args.id);
       if (postzIndex === -1) {
         throw new Error('User not found');
     }
-      postz.splice(postzIndex,1);
-      const cmntzIndex = cmntz.findIndex((comment) => comment.author !== args.id);
-      cmntz.splice(cmntzIndex, 1);
+      ctx.db.postz.splice(postzIndex,1);
+      const cmntzIndex = ctx.db.cmntz.findIndex((comment) => comment.author !== args.id);
+      ctx.db.cmntz.splice(cmntzIndex, 1);
       return deletedUser[0];
     },
     ///////User Ends Here
     //////Post Starts Here
     createPost(parent, args, ctx, info) {
-      const userExists = usrs.some((usr) => usr.id === args.author);
+      const userExists = ctx.db.usrs.some((usr) => usr.id === args.author);
       if (!userExists) {
         throw Error('User Not Found');
         }
@@ -122,12 +122,12 @@ const resolvers = {
             author: args.author,
           };
     
-          postz.push(newPost);
+          ctx.db.postz.push(newPost);
           return newPost;
     },
     createPostWithInputType(parent, args, ctx, info) {
           //postInput
-          const userExists = usrs.some((usr) => usr.id === args.postInput.author);
+          const userExists = ctx.db.usrs.some((usr) => usr.id === args.postInput.author);
           if (!userExists) {
             throw Error('User Not Found');
           }
@@ -136,24 +136,24 @@ const resolvers = {
             ...args.postInput,
           };
     
-          postz.push(newPost);
+          ctx.db.postz.push(newPost);
           return newPost;
     },
     deletePost(parent, args, ctx, info){
-      const postzIndex=postz.findIndex(pt=>pt.id===args.id);
+      const postzIndex=ctx.db.postz.findIndex(pt=>pt.id===args.id);
       if (postzIndex === -1) {
         throw new Error('Post not found');
     }
-      const deletedPost=postz.splice(postzIndex,1);
-      const cmntzIndex = cmntz.findIndex((comment) => comment.author !== args.id);
-      cmntz.splice(cmntzIndex, 1);
+      const deletedPost=ctx.db.postz.splice(postzIndex,1);
+      const cmntzIndex = ctx.db.cmntz.findIndex((comment) => comment.author !== args.id);
+      ctx.db.cmntz.splice(cmntzIndex, 1);
       return deletedPost[0];
     },
     //////Post Ends Here
     //////Comment Starts Here
     createComment(parent, args, ctx, info) {
-      const authorExists = usrs.some((usr) => usr.id === args.author);
-      const postExists = postz.some((pst) => pst.id === args.post);
+      const authorExists = ctx.db.usrs.some((usr) => usr.id === args.author);
+      const postExists = ctx.db.postz.some((pst) => pst.id === args.post);
       if (authorExists && postExists) {
         const newComment = {
           id: uuidv4(),
@@ -161,29 +161,29 @@ const resolvers = {
           author: args.author,
           post: args.post,
         };
-        cmntz.push(newComment);
+        ctx.db.cmntz.push(newComment);
         return newComment;
       } else {
         throw Error('Unable To Find User and Post');
       }
     },
     createCommentWithInputType(parent, args, ctx, info) {
-      const authorExists = usrs.some((usr) => usr.id === args.cmtInput.author);
-      const postExists = postz.some((pst) => pst.id === args.cmtInput.post);
+      const authorExists = ctx.db.usrs.some((usr) => usr.id === args.cmtInput.author);
+      const postExists = ctx.db.postz.some((pst) => pst.id === args.cmtInput.post);
       if (authorExists && postExists) {
         const newComment = {
           id: uuidv4(),
           ...args.cmtInput,
         };
-        cmntz.push(newComment);
+        ctx.db.cmntz.push(newComment);
         return newComment;
       } else {
         throw Error('Unable To Find User and Post');
       }
     },
     deleteComment(parent, args, ctx, info){
-      const cmntzIndex = cmntz.findIndex((comment) => comment.id !== args.id);
-      cmntz.splice(cmntzIndex, 1);
+      const cmntzIndex = ctx.db.cmntz.findIndex((comment) => comment.id !== args.id);
+      ctx.db.cmntz.splice(cmntzIndex, 1);
       return deletedPost[0];
     },
     //////Comment Ends Here
@@ -192,31 +192,31 @@ const resolvers = {
 
   Post: {
     author(parent, args, ctx, info) {
-      return usrs.find((usr) => {
+      return ctx.db.usrs.find((usr) => {
         return usr.id === parent.author;
       });
     },
     comments(parent, args, ctx, info) {
-      return cmntz.filter((cmt) => {
+      return ctx.db.cmntz.filter((cmt) => {
         return cmt.post === parent.id;
       });
     },
   },
   User: {
     posts(parent, args, ctx, info) {
-      return postz.filter((pst) => {
+      return ctx.db.postz.filter((pst) => {
         return pst.author === parent.id;
       });
     },
   },
   Comment: {
     author(parent, args, ctx, info) {
-      return usrs.find((usr) => {
+      return ctx.db.usrs.find((usr) => {
         return usr.id === parent.author;
       });
     },
     post(parent, args, ctx, info) {
-      return postz.find((pst) => {
+      return ctx.db.postz.find((pst) => {
         return pst.id === parent.post;
       });
     },
@@ -225,6 +225,9 @@ const resolvers = {
 const server = new GraphQLServer({
   typeDefs:'./src/schema.graphql',
   resolvers,
+  context:{
+    db:db
+  }
 });
 
 server.start(() => {
