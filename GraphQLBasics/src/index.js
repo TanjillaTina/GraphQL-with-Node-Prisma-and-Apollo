@@ -1,233 +1,28 @@
 import { GraphQLServer } from 'graphql-yoga';
-import { v4 as uuidv4 } from 'uuid';
 import db from './db';
-
+import Query from './resolvers/Query';
+import Mutation from './resolvers/Mutation';
+import Post from './resolvers/Post';
+import User from './resolvers/User';
+import Comment from './resolvers/Comment';
 //Resolvers
 const resolvers = {
   ///Query is To Fetch User Data
-  Query: {
-    comments(parent, args, ctx, info) {
-      return ctx.db.cmntz;
-    },
-    allPosts(parent, args, ctx, info) {
-      if (!args.query) {
-        return ctx.db.postz;
-      }
-      return ctx.db.postz.filter((post) => {
-        return (
-          post.title.toLowerCase().includes(args.query.toLowerCase()) ||
-          post.body.toLowerCase().includes(args.query.toLowerCase())
-        );
-      });
-    },
-    filterUsrsByName(parent, args, ctx, info) {
-      if (!args.query) {
-        return ctx.db.usrs;
-      }
-      return ctx.db.usrs.filter((user) => {
-        return user.name.toLowerCase().includes(args.query.toLowerCase());
-      });
-    },
-    allUsers(parent, args, ctx, info) {
-      return ctx.db.usrs;
-    },
-    me() {
-      return {
-        id: '14235427',
-        name: 'Tina',
-        email: 'tina@gmail.com',
-        age: 23,
-      };
-    },
-    post() {
-      return {
-        id: 2132,
-        title: 'The Title Goes Here',
-        body: 'The Post Body Goes Here',
-        published: true,
-        author: 'Tina',
-      };
-    },
-  },
+  Query: Query,
   ///Mutation is for CRUD operation
-  Mutation: {
-    ///////User Starts Here
-    createUserWithInputType(parent, args, ctx, info) {
-      const emailTaken = ctx.db.usrs.some((usr) => usr.email === args.userInput.email);
-      if (emailTaken) {
-        throw Error('Email Taken');
-      }
-      const newUser = {
-        id: uuidv4(),
-        ...args.userInput,
-      };
-      ctx.db.usrs.push(newUser);
-      return newUser;
-    },
-    createUserWithSpreadOp(parent, args, ctx, info) {
-      const emailTaken = ctx.db.usrs.some((usr) => usr.email === args.email);
-      if (emailTaken) {
-        throw Error('Email Taken');
-      }
-      const newUser = {
-        id: uuidv4(),
-        ...args,
-      };
-      ctx.db.usrs.push(newUser);
-      return newUser;
-      // console.log(args);
-    },
-    createUser(parent, args, ctx, info) {
-      const emailTaken = ctx.db.usrs.some((usr) => usr.email === args.email);
-      if (emailTaken) {
-        throw Error('Email Taken');
-      }
-      const newUser = {
-        id: uuidv4(),
-        name: args.name,
-        email: args.email,
-        age: args.age,
-      };
-      ctx.db.usrs.push(newUser);
-      return newUser;
-      // console.log(args);
-    },
-    deleteUser(parent, args, ctx, info) {
-      const userIndex = ctx.db.usrs.findIndex((user) => user.id === args.id);
-      if (userIndex === -1) {
-          throw new Error('User not found');
-      }
-      const deletedUser = ctx.db.usrs.splice(userIndex, 1);
-      const postzIndex=ctx.db.postz.findIndex(pt=>pt.author===args.id);
-      if (postzIndex === -1) {
-        throw new Error('User not found');
-    }
-      ctx.db.postz.splice(postzIndex,1);
-      const cmntzIndex = ctx.db.cmntz.findIndex((comment) => comment.author !== args.id);
-      ctx.db.cmntz.splice(cmntzIndex, 1);
-      return deletedUser[0];
-    },
-    ///////User Ends Here
-    //////Post Starts Here
-    createPost(parent, args, ctx, info) {
-      const userExists = ctx.db.usrs.some((usr) => usr.id === args.author);
-      if (!userExists) {
-        throw Error('User Not Found');
-        }
-      const newPost = {
-            id: uuidv4(),
-            title: args.title,
-            body: args.body,
-            published: args.published,
-            author: args.author,
-          };
-    
-          ctx.db.postz.push(newPost);
-          return newPost;
-    },
-    createPostWithInputType(parent, args, ctx, info) {
-          //postInput
-          const userExists = ctx.db.usrs.some((usr) => usr.id === args.postInput.author);
-          if (!userExists) {
-            throw Error('User Not Found');
-          }
-          const newPost = {
-            id: uuidv4(),
-            ...args.postInput,
-          };
-    
-          ctx.db.postz.push(newPost);
-          return newPost;
-    },
-    deletePost(parent, args, ctx, info){
-      const postzIndex=ctx.db.postz.findIndex(pt=>pt.id===args.id);
-      if (postzIndex === -1) {
-        throw new Error('Post not found');
-    }
-      const deletedPost=ctx.db.postz.splice(postzIndex,1);
-      const cmntzIndex = ctx.db.cmntz.findIndex((comment) => comment.author !== args.id);
-      ctx.db.cmntz.splice(cmntzIndex, 1);
-      return deletedPost[0];
-    },
-    //////Post Ends Here
-    //////Comment Starts Here
-    createComment(parent, args, ctx, info) {
-      const authorExists = ctx.db.usrs.some((usr) => usr.id === args.author);
-      const postExists = ctx.db.postz.some((pst) => pst.id === args.post);
-      if (authorExists && postExists) {
-        const newComment = {
-          id: uuidv4(),
-          text: args.text,
-          author: args.author,
-          post: args.post,
-        };
-        ctx.db.cmntz.push(newComment);
-        return newComment;
-      } else {
-        throw Error('Unable To Find User and Post');
-      }
-    },
-    createCommentWithInputType(parent, args, ctx, info) {
-      const authorExists = ctx.db.usrs.some((usr) => usr.id === args.cmtInput.author);
-      const postExists = ctx.db.postz.some((pst) => pst.id === args.cmtInput.post);
-      if (authorExists && postExists) {
-        const newComment = {
-          id: uuidv4(),
-          ...args.cmtInput,
-        };
-        ctx.db.cmntz.push(newComment);
-        return newComment;
-      } else {
-        throw Error('Unable To Find User and Post');
-      }
-    },
-    deleteComment(parent, args, ctx, info){
-      const cmntzIndex = ctx.db.cmntz.findIndex((comment) => comment.id !== args.id);
-      ctx.db.cmntz.splice(cmntzIndex, 1);
-      return deletedPost[0];
-    },
-    //////Comment Ends Here
+  Mutation: Mutation,
 
-  },
-
-  Post: {
-    author(parent, args, ctx, info) {
-      return ctx.db.usrs.find((usr) => {
-        return usr.id === parent.author;
-      });
-    },
-    comments(parent, args, ctx, info) {
-      return ctx.db.cmntz.filter((cmt) => {
-        return cmt.post === parent.id;
-      });
-    },
-  },
-  User: {
-    posts(parent, args, ctx, info) {
-      return ctx.db.postz.filter((pst) => {
-        return pst.author === parent.id;
-      });
-    },
-  },
-  Comment: {
-    author(parent, args, ctx, info) {
-      return ctx.db.usrs.find((usr) => {
-        return usr.id === parent.author;
-      });
-    },
-    post(parent, args, ctx, info) {
-      return ctx.db.postz.find((pst) => {
-        return pst.id === parent.post;
-      });
-    },
-  },
+  Post: Post,
+  User: User,
+  Comment: Comment,
+};
+const context = {
+  db: db,
 };
 const server = new GraphQLServer({
-  typeDefs:'./src/schema.graphql',
+  typeDefs: './src/schema.graphql',
   resolvers,
-  context:{
-    db:db
-  }
+  context,
 });
 
 server.start(() => {
