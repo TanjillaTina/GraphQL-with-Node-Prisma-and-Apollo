@@ -1,79 +1,7 @@
 import { GraphQLServer } from 'graphql-yoga';
 import { v4 as uuidv4 } from 'uuid';
-const usrs = [
-  { id: '1', name: 'A', email: 'A@gmail.com', age: 23 },
-  { id: '2', name: 'B', email: 'B@gmail.com', age: 30 },
-  { id: '3', name: 'C', email: 'C@gmail.com' },
-];
-const postz = [
-  { id: '1', title: 'AA', body: 'ABody', published: true, author: '1' },
-  { id: '2', title: 'BB', body: 'BBbody', published: true, author: '2' },
-  { id: '3', title: 'CC', body: 'CCbody', published: false, author: '2' },
-];
-const cmntz = [
-  { id: '101', text: 'Good', author: '1', post: '1' },
-  { id: '102', text: 'Great', author: '1', post: '2' },
-  { id: '103', text: 'Pathetic', author: '2', post: '2' },
-  { id: '104', text: 'Horrible', author: '3', post: '3' },
-];
+import {usrs, postz, cmntz} from './db';
 
-//Type Defs:: Application Schema
-const typeDefs = ` type Query {
-    me: User!
-    post: Post!
-    allUsers:[User!]!
-    filterUsrsByName(query:String):[User!]!
-    allPosts(query:String):[Post!]!
-    comments:[Comment!]!
-    }
-    type Mutation {
-      createUser(name:String!, email:String!, age:Int):User!
-      createPost(title:String!, body:String!,published:Boolean!,author:String!):Post!
-      createComment(text:String!,author:ID!,post:ID!):Comment!
-      createUserWithSpreadOp(name:String!, email:String!, age:Int):User!
-      createUserWithInputType(userInput:CreateUserInput!):User!
-      createPostWithInputType(postInput:CreatePostInput!):Post!
-      createCommentWithInputType(cmtInput:CreateComentInput):Comment!
-      
-    }
-    input CreateComentInput{
-      text:String!
-      author:ID!
-      post:ID!
-    }
-    input CreateUserInput{
-      name:String!
-      email:String!
-      age:Int
-    }
-    input CreatePostInput{
-      title:String!
-      body:String!
-      published:Boolean!
-      author:ID!
-    }
-    type User {
-        id:ID!
-        name:String!
-        email:String!
-        age:Int
-        posts:[Post!]!
-        comments:[Comment!]!
-      } 
-    type Post {
-      id:ID!
-      title:String!
-      body:String!
-      published:Boolean!
-      author:User!
-      comments:[Comment!]!
-    }
-    type Comment {
-      id:ID!
-      text:String!
-      author:User!
-      post:Post!
-    }`;
 //Resolvers
 const resolvers = {
   ///Query is To Fetch User Data
@@ -123,6 +51,7 @@ const resolvers = {
   },
   ///Mutation is for CRUD operation
   Mutation: {
+    ///////User Starts Here
     createUserWithInputType(parent, args, ctx, info) {
       const emailTaken = usrs.some((usr) => usr.email === args.userInput.email);
       if (emailTaken) {
@@ -148,6 +77,80 @@ const resolvers = {
       return newUser;
       // console.log(args);
     },
+    createUser(parent, args, ctx, info) {
+      const emailTaken = usrs.some((usr) => usr.email === args.email);
+      if (emailTaken) {
+        throw Error('Email Taken');
+      }
+      const newUser = {
+        id: uuidv4(),
+        name: args.name,
+        email: args.email,
+        age: args.age,
+      };
+      usrs.push(newUser);
+      return newUser;
+      // console.log(args);
+    },
+    deleteUser(parent, args, ctx, info) {
+      const userIndex = usrs.findIndex((user) => user.id === args.id);
+      if (userIndex === -1) {
+          throw new Error('User not found');
+      }
+      const deletedUser = usrs.splice(userIndex, 1);
+      const postzIndex=postz.findIndex(pt=>pt.author===args.id);
+      if (postzIndex === -1) {
+        throw new Error('User not found');
+    }
+      postz.splice(postzIndex,1);
+      const cmntzIndex = cmntz.findIndex((comment) => comment.author !== args.id);
+      cmntz.splice(cmntzIndex, 1);
+      return deletedUser[0];
+    },
+    ///////User Ends Here
+    //////Post Starts Here
+    createPost(parent, args, ctx, info) {
+      const userExists = usrs.some((usr) => usr.id === args.author);
+      if (!userExists) {
+        throw Error('User Not Found');
+        }
+      const newPost = {
+            id: uuidv4(),
+            title: args.title,
+            body: args.body,
+            published: args.published,
+            author: args.author,
+          };
+    
+          postz.push(newPost);
+          return newPost;
+    },
+    createPostWithInputType(parent, args, ctx, info) {
+          //postInput
+          const userExists = usrs.some((usr) => usr.id === args.postInput.author);
+          if (!userExists) {
+            throw Error('User Not Found');
+          }
+          const newPost = {
+            id: uuidv4(),
+            ...args.postInput,
+          };
+    
+          postz.push(newPost);
+          return newPost;
+    },
+    deletePost(parent, args, ctx, info){
+      const postzIndex=postz.findIndex(pt=>pt.id===args.id);
+      if (postzIndex === -1) {
+        throw new Error('Post not found');
+    }
+      const deletedPost=postz.splice(postzIndex,1);
+      const cmntzIndex = cmntz.findIndex((comment) => comment.author !== args.id);
+      cmntz.splice(cmntzIndex, 1);
+      return deletedPost[0];
+    },
+    //////Post Ends Here
+    //////Comment Starts Here
     createComment(parent, args, ctx, info) {
       const authorExists = usrs.some((usr) => usr.id === args.author);
       const postExists = postz.some((pst) => pst.id === args.post);
@@ -164,51 +167,6 @@ const resolvers = {
         throw Error('Unable To Find User and Post');
       }
     },
-    createUser(parent, args, ctx, info) {
-      const emailTaken = usrs.some((usr) => usr.email === args.email);
-      if (emailTaken) {
-        throw Error('Email Taken');
-      }
-      const newUser = {
-        id: uuidv4(),
-        name: args.name,
-        email: args.email,
-        age: args.age,
-      };
-      usrs.push(newUser);
-      return newUser;
-      // console.log(args);
-    },
-    createPost(parent, args, ctx, info) {
-      const userExists = usrs.some((usr) => usr.id === args.author);
-      if (!userExists) {
-        throw Error('User Not Found');
-      }
-      const newPost = {
-        id: uuidv4(),
-        title: args.title,
-        body: args.body,
-        published: args.published,
-        author: args.author,
-      };
-
-      postz.push(newPost);
-      return newPost;
-    },
-    createPostWithInputType(parent, args, ctx, info) {
-      //postInput
-      const userExists = usrs.some((usr) => usr.id === args.postInput.author);
-      if (!userExists) {
-        throw Error('User Not Found');
-      }
-      const newPost = {
-        id: uuidv4(),
-        ...args.postInput,
-      };
-
-      postz.push(newPost);
-      return newPost;
-    },
     createCommentWithInputType(parent, args, ctx, info) {
       const authorExists = usrs.some((usr) => usr.id === args.cmtInput.author);
       const postExists = postz.some((pst) => pst.id === args.cmtInput.post);
@@ -223,6 +181,13 @@ const resolvers = {
         throw Error('Unable To Find User and Post');
       }
     },
+    deleteComment(parent, args, ctx, info){
+      const cmntzIndex = cmntz.findIndex((comment) => comment.id !== args.id);
+      cmntz.splice(cmntzIndex, 1);
+      return deletedPost[0];
+    },
+    //////Comment Ends Here
+
   },
 
   Post: {
@@ -258,7 +223,7 @@ const resolvers = {
   },
 };
 const server = new GraphQLServer({
-  typeDefs,
+  typeDefs:'./src/schema.graphql',
   resolvers,
 });
 
@@ -266,11 +231,14 @@ server.start(() => {
   console.log('Server is running');
 });
 
+/*
+
 //Server running at port 4000 by default
 
-/*
+
 Mutation Queries::
 
+**********************USER***********************************
 mutation {
   createUser(name:"Tina", email:"dssxi@mk.d"){
     id,
@@ -279,7 +247,23 @@ mutation {
       age
   }
 }
+
 ////////////////////////////////
+mutation {
+    createUserWithInputType(userInput:{name:"Tina", email:"tt@m.s"}){
+      id,
+        name,
+        email,
+        age
+    }
+}
+////////////////////////////////
+
+mutation {
+deleteUser(id:"1"){id}
+}
+
+*****************************POST******************************
 mutation {
   createPost(title:"tina",body:"body",author:"1",published:true){
     id,
@@ -295,32 +279,7 @@ mutation {
     published
   }
 }
-/////////////////////////////////
-mutation {
-  createComment(
-    text:"tina",author:"2",post:"1"){
-    id,
-    text,
-    author{
-      name,
-      email
-    },
-    post{
-      id
-    }
-  }
-}
-////////////////////////////////
-mutation {
-  createUserWithInputType(userInput:{name:"Tina", email:"tt@m.s"}){
-    id,
-      name,
-      email,
-      age
-  }
-}
-
-////////////////////////////////
+//////////////////////////////////
 mutation {
   createPostWithInputType(postInput:{title:"tina",body:"body",author:"1",
     published:true}){
@@ -337,12 +296,55 @@ mutation {
     published
   }
 }
-//////////////////////////////////
+
+/////////////////////////////////
+mutation {
+deletePost(id:"2"){
+  id
+}
+}
+/////////////////////////////////
+********************************COMMENT***************************************
+mutation {
+  createComment(
+    text:"tina",author:"2",post:"1"){
+    id,
+    text,
+    author{
+      name,
+      email
+    },
+    post{
+      id
+    }
+  }
+}
+
+
+////////////////////////////////
+
+mutation {
+  createCommentWithInputType(
+    cmtInput: { text: "New Comment!!!", author: "2", post: "2" }
+  ) {
+    id
+    text
+    author {
+      name
+      email
+    }
+    post {
+      id
+    }
+  }
+}
 
 //////////////////////////////////
 //////////////////////////////////
 //////////////////////////////////
 //////////////////////////////////
 //////////////////////////////////
+
+
 
 */
