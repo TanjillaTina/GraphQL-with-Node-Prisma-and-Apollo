@@ -12,6 +12,7 @@ type Mutation {
   createUserWithSpreadOp(name: String!, email: String!, age: Int): User!
   createUserWithInputType(userInput: CreateUserInput!): User!
   deleteUser(id: ID!): User!
+  updateUser(id: ID!, data: UpdateUserInput!): User!
 
   createPostWithInputType(postInput: CreatePostInput!): Post!
   createPost(
@@ -21,15 +22,27 @@ type Mutation {
     author: String!
   ): Post!
   deletePost(id: ID!): Post!
+  updatePost(id: ID!, data: UpdatePostInput): Post!
 
   createComment(text: String!, author: ID!, post: ID!): Comment!
   createCommentWithInputType(cmtInput: CreateComentInput): Comment!
   deleteComment(id: ID!): Comment!
+  updateComment(id: ID!, data: UpdateCommentInput!): Comment!
+}
+input UpdateUserInput {
+  name: String
+  email: String
+  age: Int
 }
 input CreateUserInput {
   name: String!
   email: String!
   age: Int
+}
+input UpdatePostInput {
+  title: String
+  body: String
+  published: Boolean
 }
 input CreatePostInput {
   title: String!
@@ -41,6 +54,9 @@ input CreateComentInput {
   text: String!
   author: ID!
   post: ID!
+}
+input UpdateCommentInput {
+  text: String
 }
 type User {
   id: ID!

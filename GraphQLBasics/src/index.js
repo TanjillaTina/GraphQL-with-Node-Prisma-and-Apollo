@@ -60,6 +60,15 @@ mutation {
 mutation {
 deleteUser(id:"1"){id}
 }
+/////////////////////////////////
+mutation {
+  updateUser(id:"1",data:{name:"Tina", email:"dssxihh@mk.d"}){
+    id,
+      name,
+      email,
+      age
+  }
+}
 
 *****************************POST******************************
 mutation {
@@ -102,6 +111,23 @@ deletePost(id:"2"){
 }
 }
 /////////////////////////////////
+mutation {
+  updatePost(data:{title:"tina",body:"body",
+    published:true},id:"1"){
+    id,
+    title,
+    body,
+    author{
+      name,
+      email
+    },
+    comments{
+      id
+    }
+    published
+  }
+}
+/////////////////////////////////
 ********************************COMMENT***************************************
 mutation {
   createComment(
@@ -137,6 +163,22 @@ mutation {
   }
 }
 
+
+mutation {
+  updateComment(id:"101",
+   data: { text: "Tina New Comment!!!" }
+  ) {
+    id
+    text
+    author {
+      name
+      email
+    }
+    post {
+      id
+    }
+  }
+}
 //////////////////////////////////
 //////////////////////////////////
 //////////////////////////////////
