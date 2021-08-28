@@ -107,7 +107,10 @@ const Mutation = {
     ///////////Subs for new post/////////////
     if (args.published) {
       ctx.pubsub.publish('post', {
-        post: newPost,
+        post: {
+          mutation: 'CREATED',
+          data: newPost,
+        },
       });
     }
 
@@ -128,6 +131,17 @@ const Mutation = {
     };
 
     ctx.db.postz.push(newPost);
+    ///////////Subs for new post/////////////
+    if (args.postInput.published) {
+      ctx.pubsub.publish('post', {
+        post: {
+          mutation: 'CREATED',
+          data: newPost,
+        },
+      });
+    }
+
+    ///////////Subs for new post/////////////
     return newPost;
   },
   deletePost(parent, args, ctx, info) {
@@ -140,9 +154,20 @@ const Mutation = {
       (comment) => comment.author !== args.id
     );
     ctx.db.cmntz.splice(cmntzIndex, 1);
+    ///////////Subs for new post/////////////
+    if (deletedPost[0].published) {
+      ctx.pubsub.publish('post', {
+        post: {
+          mutation: 'DELETED',
+          data: deletedPost[0],
+        },
+      });
+    }
+
+    ///////////Subs for new post/////////////
     return deletedPost[0];
   },
-  updatePost(parent, args, { db }, info) {
+  updatePost(parent, args, { db, pubsub }, info) {
     const { id, data } = args;
     const post = db.postz.find((post) => post.id === id);
 
@@ -161,7 +186,17 @@ const Mutation = {
     if (typeof data.published === 'boolean') {
       post.published = data.published;
     }
+    ///////////Subs for new post/////////////
+    if (data.published) {
+      pubsub.publish('post', {
+        post: {
+          mutation: 'UPDATED',
+          data: post,
+        },
+      });
+    }
 
+    ///////////Subs for new post/////////////
     return post;
   },
   //////Post Ends Here
@@ -179,7 +214,10 @@ const Mutation = {
       ctx.db.cmntz.push(newComment);
       ///////////Subs for new comment/////////////
       ctx.pubsub.publish(`comment ${args.post}`, {
-        comment: newComment,
+        comment: {
+          data: newComment,
+          mutation: 'CREATED',
+        },
       });
       ///////////Subs for new comment/////////////
       return newComment;
@@ -200,6 +238,14 @@ const Mutation = {
         ...args.cmtInput,
       };
       ctx.db.cmntz.push(newComment);
+      ///////////Subs for new comment/////////////
+      ctx.pubsub.publish(`comment ${args.cmtInput.post}`, {
+        comment: {
+          data: newComment,
+          mutation: 'CREATED',
+        },
+      });
+      ///////////Subs for new comment/////////////
       return newComment;
     } else {
       throw Error('Unable To Find User and Post');
@@ -209,10 +255,18 @@ const Mutation = {
     const cmntzIndex = ctx.db.cmntz.findIndex(
       (comment) => comment.id !== args.id
     );
-    ctx.db.cmntz.splice(cmntzIndex, 1);
-    return deletedPost[0];
+    const deletedComment = ctx.db.cmntz.splice(cmntzIndex, 1);
+    ///////////Subs for new comment/////////////
+    ctx.pubsub.publish(`comment ${args.id}`, {
+      comment: {
+        data: deletedComment[0],
+        mutation: 'DELETED',
+      },
+    });
+    ///////////Subs for new comment/////////////
+    return deletedComment[0];
   },
-  updateComment(parent, args, { db }, info) {
+  updateComment(parent, args, { db, pubsub }, info) {
     const { id, data } = args;
     const comment = db.cmntz.find((comment) => comment.id === id);
 
@@ -223,7 +277,12 @@ const Mutation = {
     if (typeof data.text === 'string') {
       comment.text = data.text;
     }
-
+    pubsub.publish(`comment ${comment.post}`, {
+      comment: {
+        mutation: 'UPDATED',
+        data: comment,
+      },
+    });
     return comment;
   },
   //////Comment Ends Here
