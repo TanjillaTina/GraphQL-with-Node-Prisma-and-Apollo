@@ -169,6 +169,9 @@ const Mutation = {
         post: args.post,
       };
       ctx.db.cmntz.push(newComment);
+      ctx.pubsub.publish(`comment ${args.post}`, {
+        comment: newComment,
+      });
       return newComment;
     } else {
       throw Error('Unable To Find User and Post');

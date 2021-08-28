@@ -12,5 +12,14 @@ const Subscription = {
       return pubsub.asyncIterator('count');
     },
   },
+  comment: {
+    subscribe(parent, { postId }, ctx, info) {
+      const post = ctx.db.postz.find((pt) => pt.id === postId);
+      if (!post || !post.published) {
+        throw new Error('Post Not Found');
+      }
+      return ctx.pubsub.asyncIterator(`comment ${postId}`); ///channel name would be: 'comment postId'
+    },
+  },
 };
 export default Subscription;
