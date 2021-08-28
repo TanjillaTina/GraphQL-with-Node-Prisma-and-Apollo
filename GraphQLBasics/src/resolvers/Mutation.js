@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import db from '../db';
 const Mutation = {
   ///////User Starts Here
   createUserWithInputType(parent, args, ctx, info) {
@@ -102,8 +103,15 @@ const Mutation = {
       published: args.published,
       author: args.author,
     };
-
     ctx.db.postz.push(newPost);
+    ///////////Subs for new post/////////////
+    if (args.published) {
+      ctx.pubsub.publish('post', {
+        post: newPost,
+      });
+    }
+
+    ///////////Subs for new post/////////////
     return newPost;
   },
   createPostWithInputType(parent, args, ctx, info) {
@@ -169,9 +177,11 @@ const Mutation = {
         post: args.post,
       };
       ctx.db.cmntz.push(newComment);
+      ///////////Subs for new comment/////////////
       ctx.pubsub.publish(`comment ${args.post}`, {
         comment: newComment,
       });
+      ///////////Subs for new comment/////////////
       return newComment;
     } else {
       throw Error('Unable To Find User and Post');

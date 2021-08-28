@@ -21,5 +21,10 @@ const Subscription = {
       return ctx.pubsub.asyncIterator(`comment ${postId}`); ///channel name would be: 'comment postId'
     },
   },
+  post: {
+    subscribe(parent, args, ctx, info) {
+      return ctx.pubsub.asyncIterator('post'); ///channel name would be: 'post'
+    },
+  },
 };
 export default Subscription;

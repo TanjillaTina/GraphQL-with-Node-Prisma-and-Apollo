@@ -9,6 +9,7 @@ type Query {
 type Subscription {
   count: Int!
   comment(postId: ID!): Comment!
+  post: Post!
 }
 
 type Mutation {
