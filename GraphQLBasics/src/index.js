@@ -1,23 +1,29 @@
-import { GraphQLServer } from 'graphql-yoga';
+import { GraphQLServer, PubSub } from 'graphql-yoga';
 import db from './db';
 import Query from './resolvers/Query';
 import Mutation from './resolvers/Mutation';
+import Subscription from './resolvers/Subscription';
 import Post from './resolvers/Post';
 import User from './resolvers/User';
 import Comment from './resolvers/Comment';
+
+////PubSub constructor
+const pubsub = new PubSub();
 //Resolvers
 const resolvers = {
   ///Query is To Fetch User Data
   Query: Query,
   ///Mutation is for CRUD operation
   Mutation: Mutation,
-
+  ///Real time data Subscription
+  Subscription: Subscription,
   Post: Post,
   User: User,
   Comment: Comment,
 };
 const context = {
   db: db,
+  pubsub: pubsub,
 };
 const server = new GraphQLServer({
   typeDefs: './src/schema.graphql',
